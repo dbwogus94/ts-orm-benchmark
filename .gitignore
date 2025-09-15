@@ -42,3 +42,13 @@ lerna-debug.log*
 
 ## data
 /data
+
+## migration
+/migrations
+
+## drizzle
+/**/drizzle/**/migrations
+
+## prisma
+/**/prisma/**/migrations
+/**/prisma/**/generated
