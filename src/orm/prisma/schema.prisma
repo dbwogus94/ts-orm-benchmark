@@ -1,0 +1,167 @@
+// Prisma Schema for 피부과 CRM Benchmark
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["prisma"]
+}
+
+enum Gender {
+  male
+  female
+  other
+
+  @@schema("prisma")
+}
+
+enum ReservationStatus {
+  scheduled
+  completed
+  cancelled
+  no_show
+
+  @@schema("prisma")
+}
+
+enum PaymentMethod {
+  cash
+  card
+  insurance
+  bank_transfer
+
+  @@schema("prisma")
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+
+  @@schema("prisma")
+}
+
+model Patient {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(100)
+  gender       Gender
+  birthDate    DateTime  @map("birth_date") @db.Date
+  phone        String    @unique @db.VarChar(20)
+  address      String?   @db.VarChar(200)
+  email        String?   @db.VarChar(100)
+  firstVisitAt DateTime  @map("first_visit_at")
+  lastVisitAt  DateTime? @map("last_visit_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // 관계
+  reservations   Reservation[]
+  medicalRecords MedicalRecord[]
+  payments       Payment[]
+
+  @@index([phone])
+  @@index([firstVisitAt], map: "idx_patients_first_visit_at")
+  @@index([lastVisitAt], map: "idx_patients_last_visit_at")
+  @@index([createdAt], map: "idx_patients_created_at")
+  @@map("patients")
+  @@schema("prisma")
+}
+
+model Reservation {
+  id         Int               @id @default(autoincrement())
+  patientId  Int               @map("patient_id")
+  reservedAt DateTime          @map("reserved_at")
+  department String            @db.VarChar(50)
+  doctor     String            @db.VarChar(50)
+  status     ReservationStatus @default(scheduled)
+  notes      String?           @db.Text
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  // 관계
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId], map: "idx_reservations_patient_id")
+  @@index([reservedAt], map: "idx_reservations_reserved_at")
+  @@index([status], map: "idx_reservations_status")
+  @@index([doctor], map: "idx_reservations_doctor")
+  @@map("reservations")
+  @@schema("prisma")
+}
+
+model MedicalRecord {
+  id           Int      @id @default(autoincrement())
+  patientId    Int      @map("patient_id")
+  doctor       String   @db.VarChar(50)
+  visitDate    DateTime @map("visit_date")
+  symptoms     String   @db.Text
+  diagnosis    String   @db.Text
+  prescription String?  @db.Text
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // 관계
+  patient    Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  treatments Treatment[]
+
+  @@index([patientId], map: "idx_medical_records_patient_id")
+  @@index([visitDate], map: "idx_medical_records_visit_date")
+  @@index([doctor], map: "idx_medical_records_doctor")
+  @@map("medical_records")
+  @@schema("prisma")
+}
+
+model Treatment {
+  id            Int       @id @default(autoincrement())
+  recordId      Int       @map("record_id")
+  treatmentName String    @map("treatment_name") @db.VarChar(100)
+  price         Decimal   @db.Decimal(10, 2)
+  startedAt     DateTime  @map("started_at")
+  endedAt       DateTime? @map("ended_at")
+  duration      Int? // minutes
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // 관계
+  medicalRecord MedicalRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  payments      Payment[]
+
+  @@index([recordId], map: "idx_treatments_record_id")
+  @@index([treatmentName], map: "idx_treatments_treatment_name")
+  @@index([startedAt], map: "idx_treatments_started_at")
+  @@index([price], map: "idx_treatments_price")
+  @@map("treatments")
+  @@schema("prisma")
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement())
+  patientId     Int           @map("patient_id")
+  treatmentId   Int?          @map("treatment_id")
+  amount        Decimal       @db.Decimal(10, 2)
+  method        PaymentMethod
+  status        PaymentStatus @default(pending)
+  paidAt        DateTime?     @map("paid_at")
+  receiptNumber String?       @map("receipt_number") @db.VarChar(50)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // 관계
+  patient   Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  treatment Treatment? @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
+
+  @@index([patientId], map: "idx_payments_patient_id")
+  @@index([treatmentId], map: "idx_payments_treatment_id")
+  @@index([paidAt], map: "idx_payments_paid_at")
+  @@index([status], map: "idx_payments_status")
+  @@index([method], map: "idx_payments_method")
+  @@map("payments")
+  @@schema("prisma")
+}
