@@ -64,8 +64,7 @@
     "cli-table3": "^0.6.4",
     "drizzle-kit": "0.31.4",
     "drizzle-orm": "0.44.5",
-    "pg": "8.11.5",
-    "postgres": "^3.4.7",
+    "pg": "^8.11.5",
     "prisma": "^6.15.0",
     "reflect-metadata": "^0.1.13",
     "sequelize": "6.37.3",
@@ -74,7 +73,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.8",
-    "@types/pg": "^8.11.6",
+    "@types/pg": "^8.15.5",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "dotenv-cli": "^7.4.2",
