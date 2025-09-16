@@ -11,8 +11,10 @@ export const getDatabaseConfig = () => ({
     "postgresql://postgres:password@localhost:5432/orm_benchmark",
 });
 
-export const createDatabaseConnection = () => {
-  const config = getDatabaseConfig();
+export const createDatabaseConnectionPool = (
+  dbConfig?: ReturnType<typeof getDatabaseConfig>
+) => {
+  const config = dbConfig || getDatabaseConfig();
   return new Pool({
     host: config.host,
     port: config.port,

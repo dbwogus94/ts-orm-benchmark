@@ -1,17 +1,17 @@
-#!/usr/bin/env ts-node
-
 import * as chalk from "chalk";
-import { drizzle } from "drizzle-orm/postgres-js";
-import * as postgres from "postgres";
 import { count } from "drizzle-orm";
 
-import { createDrizzleSchema } from "../orm/drizzle/schema";
+import {
+  closeDrizzle,
+  getDrizzleClient,
+  getDrizzleSchema,
+} from "../orm/drizzle/config";
+import { measurePerformance } from "../utils/database";
 import { CRMDataGenerator } from "../utils/faker";
-import { getDatabaseConfig, measurePerformance } from "../utils/database";
 
 const BATCH_SIZE = parseInt(process.env.BENCHMARK_BATCH_SIZE || "1000");
 const TOTAL_RECORDS = parseInt(process.env.BENCHMARK_TOTAL_RECORDS || "100000");
-const SCHEMAS = ["drizzle", "prisma", "sequelize", "typeorm"];
+const SCHEMAS = ["sequelize", "prisma", "typeorm", "drizzle"];
 
 /**
  * Drizzle을 사용하여 모든 스키마에 대한 통합 시드 데이터 생성
@@ -19,6 +19,7 @@ const SCHEMAS = ["drizzle", "prisma", "sequelize", "typeorm"];
 async function seedAll() {
   for (const schemaName of SCHEMAS) {
     await seedSchema(schemaName);
+    await closeDrizzle();
   }
 }
 
@@ -32,14 +33,8 @@ async function seedSchema(schemaName: string) {
     )
   );
 
-  const config = getDatabaseConfig();
-  const client = postgres(config);
-  const schema = createDrizzleSchema(schemaName);
-  const db = drizzle(client, {
-    schema,
-    logger: false,
-  });
-
+  const db = getDrizzleClient(schemaName);
+  const schema = getDrizzleSchema();
   try {
     const { payments, treatments, medicalRecords, reservations, patients } =
       schema;
@@ -224,7 +219,7 @@ async function seedSchema(schemaName: string) {
     );
     process.exit(1);
   } finally {
-    await client.end();
+    await closeDrizzle();
   }
 }
 
