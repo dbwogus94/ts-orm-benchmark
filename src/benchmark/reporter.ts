@@ -1,7 +1,7 @@
-import fs from "fs";
-import path from "path";
+import * as fs from "fs";
+import * as path from "path";
 import * as chalk from "chalk";
-import Table from "cli-table3";
+import * as Table from "cli-table3";
 import { BenchmarkResult } from "../types";
 
 export interface BenchmarkReport {
@@ -25,6 +25,32 @@ export interface BenchmarkReport {
 export class BenchmarkReporter {
   private results: BenchmarkResult[] = [];
   private startTime: Date = new Date();
+  private defaultDir: string = "results";
+
+  /**
+   * 기본 디렉토리를 입력받은 path에 추가한다.
+   * - 기본 디렉토리가 경로에 없다면 추가한다.
+   * @param filePath
+   * @returns
+   */
+  addDefaultDir(filePath: string): string {
+    return filePath.startsWith(this.defaultDir)
+      ? filePath
+      : path.join(this.defaultDir, filePath);
+  }
+
+  /**
+   * 경로에 폴더 생성
+   * @param filePath
+   * @returns
+   */
+  mkdirForFileDir(filePath: string): string {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return filePath;
+  }
 
   /**
    * 벤치마크 결과 추가
@@ -121,11 +147,8 @@ export class BenchmarkReporter {
       summary: this.generateSummary(),
     };
 
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
+    filePath = this.addDefaultDir(filePath);
+    this.mkdirForFileDir(filePath);
     fs.writeFileSync(filePath, JSON.stringify(report, null, 2));
     console.log(chalk.green(`✅ Results saved to: ${filePath}`));
   }
@@ -160,11 +183,8 @@ export class BenchmarkReporter {
       .map((row) => row.map((cell) => `"${cell}"`).join(","))
       .join("\n");
 
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
+    filePath = this.addDefaultDir(filePath);
+    this.mkdirForFileDir(filePath);
     fs.writeFileSync(filePath, csvContent);
     console.log(chalk.green(`✅ Results saved to: ${filePath}`));
   }
@@ -205,11 +225,8 @@ export class BenchmarkReporter {
       markdown += `\n`;
     });
 
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
+    filePath = this.addDefaultDir(filePath);
+    this.mkdirForFileDir(filePath);
     fs.writeFileSync(filePath, markdown);
     console.log(chalk.green(`✅ Results saved to: ${filePath}`));
   }

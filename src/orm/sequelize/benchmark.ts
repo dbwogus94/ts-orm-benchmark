@@ -1,11 +1,10 @@
-#!/usr/bin/env ts-node
-
 import * as chalk from "chalk";
 import { subDays } from "../../utils/date";
-
 import { Op, QueryTypes } from "sequelize";
 import { BaseBenchmark } from "../../benchmark/base";
 import { BenchmarkResult } from "../../types";
+import { BenchmarkReporter } from "../../benchmark/reporter";
+
 import {
   closeSequelize,
   getSequelizeInstance,
@@ -304,7 +303,33 @@ async function runBenchmark() {
 
 // 직접 실행된 경우에만 벤치마크 실행
 if (require.main === module) {
-  runBenchmark();
+  type BenchmarkReportMode = "file" | "console" | "all";
+  const BENCHMARK_REPORT_MODE = process.env
+    .BENCHMARK_REPORT_MODE as BenchmarkReportMode;
+  const reporter = new BenchmarkReporter();
+
+  const report = (result: BenchmarkResult[]) => {
+    const filePrefix = "sequelize";
+    reporter.addResults(result);
+    switch (BENCHMARK_REPORT_MODE) {
+      case "all":
+        reporter.printConsoleReport();
+        reporter.saveToJSON(`${filePrefix}.json`);
+        reporter.saveToCSV(`${filePrefix}.csv`);
+        reporter.saveToMarkdown(`${filePrefix}.md`);
+        break;
+      case "file":
+        reporter.saveToJSON(`${filePrefix}.json`);
+        reporter.saveToCSV(`${filePrefix}.csv`);
+        reporter.saveToMarkdown(`${filePrefix}.md`);
+        break;
+      case "console":
+      default:
+        reporter.printConsoleReport();
+        break;
+    }
+  };
+  runBenchmark().then((result) => report(result));
 }
 
 export default SequelizeBenchmark;
